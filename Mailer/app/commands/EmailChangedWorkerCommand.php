@@ -11,10 +11,12 @@ use Remp\MailerModule\User\IUser;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Tracy\Debugger;
+use Tracy\ILogger;
 
 class EmailChangedWorkerCommand extends Command
 {
-    const TOPICS = ['email_changed'];
+    const TOPICS = ['user_email_changed'];
 
     private $consumerFactory;
 
@@ -52,7 +54,7 @@ class EmailChangedWorkerCommand extends Command
         $consumer = $this->consumerFactory->getInstance(self::TOPICS);
 
         while (true) {
-            $message = $consumer->consume(120000);
+            $message = $consumer->consume(10000);
             switch ($message->err) {
                 case RD_KAFKA_RESP_ERR_NO_ERROR:
                     break;
@@ -68,7 +70,7 @@ class EmailChangedWorkerCommand extends Command
             $originalEmail = $message['fields']['original_email'];
             $newEmail = $message['fields']['new_email'];
 
-            $output->write(sprintf("Change user email %s to %s) ... ", $originalEmail, $newEmail));
+            $output->write(sprintf("Change user email %s to %s ... ", $originalEmail, $newEmail));
 
             $subscriptions = $this->userSubscriptionsRepository->findByEmail($originalEmail);
 
@@ -77,7 +79,7 @@ class EmailChangedWorkerCommand extends Command
             }
 
             foreach ($subscriptions as $subscription) {
-                $this->userSubscriptionsRepository->update($subscription, ['email' => $newEmail]);
+                $this->userSubscriptionsRepository->update($subscription, ['user_email' => $newEmail]);
             }
 
             $output->writeln('<info>OK!</info>');
