@@ -31,9 +31,9 @@ URL: [http://localhost:8889/localfile/rg-data-qa-notebok.ipynb](http://localhost
 ## Dependencies
 
 - Python 3 & pip.
-- Python 3 devel package
-   - Fedora: `sudo dnf install python3-devel`
-   - Ubuntu: `sudo apt-get install python3-dev`
+- Python 3 devel package & MySQL/MariaDB devel package
+   - Fedora: `sudo dnf install python3-devel mysql-devel`
+   - Ubuntu: `sudo apt-get install python3-dev mysql-devel`
 - Project dependencies are listed in file [requirements.txt](requirements.txt). Use pip to install it: `pip3 install -r requirements.txt`
 
 ### Other dependencies
