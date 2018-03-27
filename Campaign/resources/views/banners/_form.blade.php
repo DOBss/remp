@@ -23,6 +23,9 @@
     banner.dimensionOptions = dimensions;
     banner.positionOptions = positions;
     banner.forcedPosition = 'absolute';
+    banner.targetSelectorUrl = null;
+    banner.previewFrameShow = false;
+    banner.previewFrameUrl = null;
 
     remplib.bannerForm.bind("#banner-form", banner);
 

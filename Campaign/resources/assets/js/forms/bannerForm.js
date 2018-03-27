@@ -23,6 +23,16 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
             });
         }
 
+    };
+
+    window.addEventListener('message', remp_receiver, false);
+
+    function remp_receiver(e) {
+        let iframe = $('#preview_frame');
+
+        if (iframe.length && e.origin === iframe[0].src.split('/').slice(0, 3).join('/')) {
+            $('#target_selector').val('#'+e.data).focus().blur();
+        }
     }
 
 })();

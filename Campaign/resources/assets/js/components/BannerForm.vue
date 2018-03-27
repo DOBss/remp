@@ -165,6 +165,14 @@
                                     <label for="target_selector" class="fg-label">Target element selector</label>
                                     <input v-model="targetSelector" class="form-control fg-input" name="target_selector" type="text" id="target_selector">
                                 </div>
+                                <span class="input-group-addon"><i class="zmdi zmdi-eyedropper" id="target_selection" v-on:click="selectTarget"></i></span>
+                            </div>
+                            <div class="input-group fg-float">
+                                <span class="input-group-addon"><i class="zmdi zmdi-link"></i></span>
+                                <div class="fg-line">
+                                    <label for="target_selector_url" class="fg-label">URL of target page for selection</label>
+                                    <input v-model="targetSelectorUrl" class="form-control fg-input" name="target_selector_url" type="text" id="target_selector_url">
+                                </div>
                             </div>
 
                             <div class="input-group fg-float checkbox">
@@ -200,7 +208,11 @@
                 <div class="tab-content p-0">
                     <div role="tabpanel" class="active tab-pane" id="preview">
                         <div class="card-body" id="banner-preview">
-                            <div class="p-relative" style="height: 800px">
+                            <iframe id="preview_frame"
+                                    v-bind:src="previewFrameUrl"
+                                    v-if="previewFrameShow"
+                            ></iframe>
+                            <div class="p-relative">
                                 <banner-preview
                                         :alignmentOptions="alignmentOptions"
                                         :dimensionOptions="dimensionOptions"
@@ -252,6 +264,9 @@
         "_displayType",
         "_template",
 
+        "_previewFrameShow",
+        "_previewFrameUrl",
+
         "_mediumRectangleTemplate",
         "_barTemplate",
         "_htmlTemplate",
@@ -292,8 +307,12 @@
             displayDelay: null,
             closeTimeout: null,
             targetSelector: null,
+            targetSelectorUrl: null,
             displayType: null,
             template: null,
+
+            previewFrameShow: false,
+            previewFrameUrl: null,
 
             mediumRectangleTemplate: null,
             barTemplate: null,
@@ -313,5 +332,35 @@
                 {"label": "Fade in down", "value": "fade-in-down"},
             ]
         }),
+        watch: {
+            'targetSelectorUrl': function() {
+                let url = $('#target_selector_url').val().trim();
+
+                if(url.length && /^(https?|s?ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i.test(url)) {
+                    this.previewFrameUrl = url;
+                    this.previewFrameShow = true;
+                    this.show = false;
+                    $('#target_selector_url').parent().removeClass('has-error');
+
+                } else {
+                    this.previewFrameShow = false;
+                    this.previewFrameUrl = null;
+                    $('#target_selector_url').focus().parent().addClass('has-error');
+                }
+            }
+        },
+        methods: {
+            selectTarget: () => {
+                let iframe = $('#preview_frame');
+
+                if (iframe.is(':visible')) {
+                    iframe[0].contentWindow.postMessage("remp-picker", '*');
+
+                } else {
+                    alert('Please enter a valid URL of target page for selection');
+
+                }
+            }
+        }
     }
 </script>
