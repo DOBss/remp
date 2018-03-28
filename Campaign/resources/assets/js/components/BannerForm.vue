@@ -211,6 +211,7 @@
                             <iframe id="preview_frame"
                                     v-bind:src="previewFrameUrl"
                                     v-if="previewFrameShow"
+                                    v-on:load="frameLoad"
                             ></iframe>
                             <div class="p-relative">
                                 <banner-preview
@@ -334,9 +335,16 @@
         }),
         watch: {
             'targetSelectorUrl': function() {
+                // TODO implement showing the banner in selected location
                 let url = $('#target_selector_url').val().trim();
 
-                if(url.length && /^(https?|s?ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i.test(url)) {
+                if(!url.length){
+                    $('#target_selection').removeClass('disabled');
+                    this.previewFrameShow = false;
+                    this.previewFrameUrl = null;
+                    $('#target_selector_url').focus().parent().addClass('has-error');
+
+                } else if(/^(?:https?:\/\/)?(?:((?:[^\W\s]|\.|-|[:]{1})+)@{1})?((?:www.)?(?:[^\W\s]|\.|-)+[\.][^\W\s]{2,4}|localhost(?=\/)|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::(\d*))?([\/]?[^\s\?]*[\/]{1})*(?:\/?([^\s\n\?\[\]\{\}\#]*(?:(?=\.)){1}|[^\s\n\?\[\]\{\}\.\#]*)?([\.]{1}[^\s\?\#]*)?)?(?:\?{1}([^\s\n\#\[\]]*))?([\#][^\s\n]*)?$/i.test(url)) {
                     this.previewFrameUrl = url;
                     this.previewFrameShow = true;
                     this.show = false;
@@ -350,16 +358,13 @@
             }
         },
         methods: {
-            selectTarget: () => {
-                let iframe = $('#preview_frame');
-
-                if (iframe.is(':visible')) {
-                    iframe[0].contentWindow.postMessage("remp-picker", '*');
-
-                } else {
-                    alert('Please enter a valid URL of target page for selection');
-
+            selectTarget: (e) => {
+                if(!e.target.classList.contains("disabled")){
+                    remplib.bannerForm.targetPicker.sendMessage("remp-picker");
                 }
+            },
+            frameLoad: () => {
+                remplib.bannerForm.targetPicker.testCompatibility();
             }
         }
     }

@@ -21,18 +21,71 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
                     props: Transformer.transformKeys(banner)
                 }),
             });
+        },
+
+        targetPicker: {
+            compat_timer: 0,
+            compat_delay: 3000,
+
+            init: function() {
+                window.addEventListener('message', remplib.bannerForm.targetPicker.receiver, false);
+            },
+
+            testCompatibility: function(){
+                this.sendMessage('remp-test');
+                this.compat_timer = setTimeout(function(){
+                    $('#target_selection').addClass('disabled');
+                    alert("Page is not compatible for interactive element selection.\n" +
+                          "Please include the following script in the page:\n" +
+                          "http://campaign.remp.press/resources/banner.js"
+                    );
+
+                }, this.compat_delay);
+            },
+
+            receiver: function(e) {
+                let iframe  = $('#preview_frame');
+                let message = remplib.bannerForm.targetPicker.parseResponse(e.data);
+
+                if (message && iframe.length && e.origin === iframe[0].src.split('/').slice(0, 3).join('/')) {
+                    switch(message.remp_action){
+                        case 'test_response':
+                            $('#target_selection').removeClass('disabled');
+                            clearTimeout(remplib.bannerForm.targetPicker.compat_timer);
+                            break;
+                        case 'el_select':
+                            $('#target_selector').val(message.el).focus().blur();
+                    }
+                }
+            },
+
+            parseResponse: function(jsonString) {
+                try {
+                    let o = JSON.parse(jsonString);
+
+                    if (o && typeof o === "object" && o.remp_action !== undefined) {
+                        return o;
+                    }
+                } catch (e) {}
+
+                return false;
+            },
+
+            sendMessage: function(msg) {
+                let iframe = $('#preview_frame');
+
+                if (!iframe.is(':visible')) {
+                    alert('Please enter a valid URL of target page for selection');
+
+                } else if(iframe.css("visibility") === "visible") {
+                    iframe[0].contentWindow.postMessage(msg, '*');
+
+                }
+            }
         }
 
     };
 
-    window.addEventListener('message', remp_receiver, false);
-
-    function remp_receiver(e) {
-        let iframe = $('#preview_frame');
-
-        if (iframe.length && e.origin === iframe[0].src.split('/').slice(0, 3).join('/')) {
-            $('#target_selector').val('#'+e.data).focus().blur();
-        }
-    }
+    remplib.bannerForm.targetPicker.init();
 
 })();

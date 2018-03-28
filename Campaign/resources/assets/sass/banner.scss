@@ -69,6 +69,11 @@
     cursor: pointer;
 }
 
+#target_selection.disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
 #banner-preview,
 #banner-preview .p-relative {
     height: 800px;
