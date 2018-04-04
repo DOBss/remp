@@ -345,7 +345,7 @@
                     $('#target_selector_url').focus().parent().addClass('has-error');
 
                 } else if(/^(?:https?:\/\/)?(?:((?:[^\W\s]|\.|-|[:]{1})+)@{1})?((?:www.)?(?:[^\W\s]|\.|-)+[\.][^\W\s]{2,4}|localhost(?=\/)|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::(\d*))?([\/]?[^\s\?]*[\/]{1})*(?:\/?([^\s\n\?\[\]\{\}\#]*(?:(?=\.)){1}|[^\s\n\?\[\]\{\}\.\#]*)?([\.]{1}[^\s\?\#]*)?)?(?:\?{1}([^\s\n\#\[\]]*))?([\#][^\s\n]*)?$/i.test(url)) {
-                    this.previewFrameUrl = (/^https?:\/\/$/i.test(url) ? '' : 'http://') + url;
+                    this.previewFrameUrl = (/^https?:\/\//i.test(url) ? '' : 'http://') + url;
                     this.previewFrameShow = true;
                     this.show = false;
                     $('#target_selector_url').parent().removeClass('has-error');
