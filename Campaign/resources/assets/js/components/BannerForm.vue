@@ -171,7 +171,7 @@
                                 <span class="input-group-addon"><i class="zmdi zmdi-link"></i></span>
                                 <div class="fg-line">
                                     <label for="target_selector_url" class="fg-label">URL of target page for selection</label>
-                                    <input v-model="targetSelectorUrl" class="form-control fg-input" name="target_selector_url" type="text" id="target_selector_url">
+                                    <input v-model="targetSelectorUrl" class="form-control fg-input" name="target_selector_url" type="url" id="target_selector_url">
                                 </div>
                             </div>
 
@@ -195,9 +195,19 @@
         </div>
 
         <div class="col-md-8">
-            <ul class="tab-nav" role="tablist" data-tab-color="teal">
-                <li class="active">
+            <ul class="tab-nav text-center" role="tablist" data-tab-color="teal">
+                <li class="active pull-left">
                     <a href="#preview" role="tab" data-toggle="tab" aria-expanded="true">Preview</a>
+                </li>
+                <li v-if="previewFrameShow">
+                    <div class="btn-group" id="frame-size-switcher">
+                        <button type="button" class="btn btn-info waves-effect" data-size="auto" v-on:click="frameSize" title="Auto">Auto</button>
+                        <button type="button" class="btn btn-default waves-effect" data-size="xs" v-on:click="frameSize" title="Extra Small">XS</button>
+                        <button type="button" class="btn btn-default waves-effect" data-size="sm" v-on:click="frameSize" title="Small">SM</button>
+                        <button type="button" class="btn btn-default waves-effect" data-size="md" v-on:click="frameSize" title="Medium">MD</button>
+                        <button type="button" class="btn btn-default waves-effect" data-size="lg" v-on:click="frameSize" title="Large">LG</button>
+                        <button type="button" class="btn btn-default waves-effect" data-size="xl" v-on:click="frameSize" title="Extra Large">XL</button>
+                    </div>
                 </li>
                 <li class="pull-right">
                     <button type="button" class="btn btn-default" v-on:click="show = !show">Toggle banner</button>
@@ -335,36 +345,38 @@
         }),
         watch: {
             'targetSelectorUrl': function() {
-                // TODO implement showing the banner in selected location
-                let url = $('#target_selector_url').val().trim();
+                let $url   = $('#target_selector_url'),
+                    urlVal = $url.val().trim();
 
-                if(!url.length){
-                    $('#target_selection').removeClass('disabled');
-                    this.previewFrameShow = false;
-                    this.previewFrameUrl = null;
-                    $('#target_selector_url').focus().parent().addClass('has-error');
-
-                } else if(/^(?:https?:\/\/)?(?:((?:[^\W\s]|\.|-|[:]{1})+)@{1})?((?:www.)?(?:[^\W\s]|\.|-)+[\.][^\W\s]{2,4}|localhost(?=\/)|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::(\d*))?([\/]?[^\s\?]*[\/]{1})*(?:\/?([^\s\n\?\[\]\{\}\#]*(?:(?=\.)){1}|[^\s\n\?\[\]\{\}\.\#]*)?([\.]{1}[^\s\?\#]*)?)?(?:\?{1}([^\s\n\#\[\]]*))?([\#][^\s\n]*)?$/i.test(url)) {
-                    this.previewFrameUrl = (/^https?:\/\//i.test(url) ? '' : 'http://') + url;
+                if (urlVal.length && $url[0].checkValidity()) {
+                    this.previewFrameUrl = urlVal + "#remp-picker";
                     this.previewFrameShow = true;
                     this.show = false;
-                    $('#target_selector_url').parent().removeClass('has-error');
+                    $url.parent().removeClass('has-error');
 
                 } else {
+                    if (!urlVal.length) {
+                        $('#target_selection').removeClass('disabled');
+                        $url.focus().parent().removeClass('has-error');
+                    } else {
+                        $url.focus().parent().addClass('has-error');
+                    }
                     this.previewFrameShow = false;
                     this.previewFrameUrl = null;
-                    $('#target_selector_url').focus().parent().addClass('has-error');
                 }
             }
         },
         methods: {
             selectTarget: (e) => {
-                if(!e.target.classList.contains("disabled")){
+                if (!e.target.classList.contains("disabled")) {
                     remplib.bannerForm.targetPicker.sendMessage("remp-picker");
                 }
             },
             frameLoad: () => {
                 remplib.bannerForm.targetPicker.testCompatibility();
+            },
+            frameSize: (e) => {
+                remplib.bannerForm.targetPicker.changeFrameSize(e);
             }
         }
     }

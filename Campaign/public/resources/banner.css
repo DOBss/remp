@@ -1,4 +1,4 @@
-body.remp-picker .remp-banner {
+body.remp-selector .remp-banner {
     padding: 30px 15px;
     background: #CCC;
     border: 2px solid #777;
@@ -13,23 +13,23 @@ body.remp-picker .remp-banner {
     cursor: not-allowed;
 }
 
-body.remp-picker .remp-banner[id] {
+body.remp-selector .remp-banner[id] {
     opacity: 1;
     cursor: default;
 }
 
-body.remp-picker .remp-banner[id]:hover,
-body.remp-picker .remp-banner[id].active {
+body.remp-selector .remp-banner[id]:hover,
+body.remp-selector .remp-banner[id].remp-active {
     color: #A94442;
     background-color: #F2DEDE;
     border-color: #EBCCD1;
     cursor: pointer;
 }
 
-body.remp-picker .remp-banner:before {
+body.remp-selector .remp-banner:before {
     content: 'banner - missing #id';
 }
 
-body.remp-picker .remp-banner[id]:before {
+body.remp-selector .remp-banner[id]:before {
     content: 'banner';
 }

@@ -24,34 +24,85 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
         },
 
         targetPicker: {
-            compat_timer: 0,
-            compat_delay: 3000,
+            compatTimer: 0,
+            compatDelay: 3000,
+            viewportDimensions: {
+                auto: 'auto',
+                xs: 575,
+                sm: 767,
+                md: 991,
+                lg: 1199,
+                xl: 1440
+            },
 
             init: function() {
                 window.addEventListener('message', remplib.bannerForm.targetPicker.receiver, false);
+                $(window).on('resize', this.changeFrameSize);
             },
 
-            testCompatibility: function(){
-                this.sendMessage('remp-test');
-                this.compat_timer = setTimeout(function(){
-                    $('#target_selection').addClass('disabled');
-                    alert("Page is not compatible for interactive element selection.\n" +
-                          "Please include the following script in the page:\n" +
-                          "http://campaign.remp.press/resources/banner.js"
-                    );
+            testCompatibility: function() {
+                if (this.sendMessage('remp-test')) {
+                    clearTimeout(this.compatTimer);
 
-                }, this.compat_delay);
+                    this.compatTimer = setTimeout(function() {
+                        $('#target_selection').addClass('disabled');
+                        $.notify({
+                            message: "Page is not compatible for interactive element selection.\n" +
+                                     "Please include the required .js file."
+                        }, {
+                            allow_dismiss: false,
+                            type: 'danger'
+                        });
+
+                    }, this.compatDelay);
+                }
+            },
+
+            changeFrameSize: function(e) {
+                let frame = $('#preview_frame');
+
+                if (!frame.is(':visible')) return;
+
+                if (e.type === 'click') {
+                    $('#frame-size-switcher .btn').removeClass('btn-info').addClass('btn-default');
+                    $(e.target).removeClass('btn-default').addClass('btn-info');
+                }
+
+                let container = $('#banner-preview'),
+                    frameWidth = frame.width(),
+                    newWidth = remplib.bannerForm.targetPicker.viewportDimensions[$('#frame-size-switcher .btn.btn-info')[0].dataset.size],
+                    ratio = parseFloat(frame[0].style.transform.replace(/[^0-9.]/g, ''));
+
+                container = {
+                    width: container.width(),
+                    height: container.height()
+                };
+
+                let newRatio = container.width / newWidth;
+
+                if (newWidth === 'auto' && frameWidth !== container.width) {
+                    frame.removeAttr('style');
+                } else if (newWidth !== frameWidth || newRatio !== ratio) {
+                    let newHeight = container.height / newRatio;
+
+                    frame.css({
+                        top: (container.height - newHeight) / 2,
+                        left: (container.width - newWidth) / 2,
+                        width: newWidth,
+                        height: newHeight,
+                        transform: 'scale(' + newRatio + ')'
+                    });
+                }
             },
 
             receiver: function(e) {
-                let iframe  = $('#preview_frame');
                 let message = remplib.bannerForm.targetPicker.parseResponse(e.data);
 
-                if (message && iframe.length && e.origin === iframe[0].src.split('/').slice(0, 3).join('/')) {
+                if (message && $('#preview_frame').length) {
                     switch(message.remp_action){
                         case 'test_response':
                             $('#target_selection').removeClass('disabled');
-                            clearTimeout(remplib.bannerForm.targetPicker.compat_timer);
+                            clearTimeout(remplib.bannerForm.targetPicker.compatTimer);
                             break;
                         case 'el_select':
                             $('#target_selector').val(message.el).focus().blur();
@@ -75,12 +126,21 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
                 let iframe = $('#preview_frame');
 
                 if (!iframe.is(':visible')) {
-                    alert('Please enter a valid URL of target page for selection');
+                    $.notify({
+                        message: 'Please enter a valid URL of target page for selection'
+                    }, {
+                        allow_dismiss: false,
+                        type: 'danger'
+                    });
 
-                } else if(iframe.css("visibility") === "visible") {
+                } else if (iframe.is(":visible")) {
                     iframe[0].contentWindow.postMessage(msg, '*');
 
+                    return true;
+
                 }
+
+                return false;
             }
         }
 

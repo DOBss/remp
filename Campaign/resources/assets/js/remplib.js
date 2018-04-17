@@ -81,6 +81,10 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
                 this.variables = config.campaign.variables;
             }
 
+            if (window.location.hash === "#remp-picker") {
+                this.bannerPicker.init();
+            }
+
             // global
             if (typeof config.userId !== 'undefined' && config.userId !== null) {
                 remplib.userId = config.userId;
@@ -91,7 +95,7 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
 
             if (typeof config.cookieDomain === 'string') {
                 remplib.cookieDomain = config.cookieDomain;
-            } 
+            }
 
             this.incrementPageviewCount();
         },
@@ -223,6 +227,58 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
             }
 
             localStorage.setItem(this.campaignsSessionStorageKey, JSON.stringify(campaigns));
+        },
+
+        bannerPicker: {
+            init: function() {
+                remplib.loadStyle(remplib.campaign.url + '/resources/banner.css');
+
+                window.addEventListener('message', remplib.campaign.bannerPicker.receiver, false);
+
+                let banners = document.getElementsByClassName('remp-banner');
+
+                for (let i=0, len=banners.length; i < len; i++) {
+                    if (banners[i].id.length) {
+                        banners[i].onclick = remplib.campaign.bannerPicker.bannerClick;
+                    }
+                }
+            },
+
+            bannerClick: function() {
+                let banners = document.getElementsByClassName('remp-banner');
+
+                for (let i=0, len=banners.length; i < len; i++) {
+                    if (banners[i].id.length) {
+                        banners[i].classList.remove("remp-active");
+                    }
+                }
+
+                this.classList.add("remp-active");
+                remplib.campaign.bannerPicker.sendMessage({remp_action: 'el_select', el: '#' + this.id});
+            },
+
+            sendMessage: function(msg, target) {
+                target = target || parent;
+
+                target.postMessage(JSON.stringify(msg), remplib.campaign.url);
+            },
+
+            receiver: function(e) {
+                if (e.origin === remplib.campaign.url) {
+                    switch (e.data) {
+                        case 'remp-test':
+                            remplib.campaign.bannerPicker.sendMessage({remp_action: 'test_response'}, e.source);
+                            break;
+
+                        case 'remp-picker':
+                            if (document.body.classList.contains("remp-selector")) {
+                                document.body.classList.remove("remp-selector");
+                            } else {
+                                document.body.classList.add("remp-selector");
+                            }
+                    }
+                }
+            }
         },
     };
 
