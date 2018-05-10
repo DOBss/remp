@@ -82,7 +82,7 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
             }
 
             if (window.location.hash === "#remp-picker") {
-                this.bannerPicker.init();
+                remplib.bannerPicker.init(config);
             }
 
             // global
@@ -227,59 +227,62 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
             }
 
             localStorage.setItem(this.campaignsSessionStorageKey, JSON.stringify(campaigns));
-        },
+        }
+    };
 
-        bannerPicker: {
-            init: function() {
-                remplib.loadStyle(remplib.campaign.url + '/resources/banner.css');
+    prodlib.bannerPicker = {
+        bannerSelector: ".remp-banner",
 
-                window.addEventListener('message', remplib.campaign.bannerPicker.receiver, false);
+        init: function(config) {
+            this.bannerSelector = config.bannerSelector || this.bannerSelector;
 
-                let banners = document.getElementsByClassName('remp-banner');
+            remplib.loadStyle(remplib.campaign.url + '/assets/lib/css/bannerPicker.css');
 
-                for (let i=0, len=banners.length; i < len; i++) {
-                    if (banners[i].id.length) {
-                        banners[i].onclick = remplib.campaign.bannerPicker.bannerClick;
-                    }
-                }
-            },
+            window.addEventListener('message', this.receiver, false);
 
-            bannerClick: function() {
-                let banners = document.getElementsByClassName('remp-banner');
+            let banners = document.querySelectorAll(this.bannerSelector);
 
-                for (let i=0, len=banners.length; i < len; i++) {
-                    if (banners[i].id.length) {
-                        banners[i].classList.remove("remp-active");
-                    }
-                }
-
-                this.classList.add("remp-active");
-                remplib.campaign.bannerPicker.sendMessage({remp_action: 'el_select', el: '#' + this.id});
-            },
-
-            sendMessage: function(msg, target) {
-                target = target || parent;
-
-                target.postMessage(JSON.stringify(msg), remplib.campaign.url);
-            },
-
-            receiver: function(e) {
-                if (e.origin === remplib.campaign.url) {
-                    switch (e.data) {
-                        case 'remp-test':
-                            remplib.campaign.bannerPicker.sendMessage({remp_action: 'test_response'}, e.source);
-                            break;
-
-                        case 'remp-picker':
-                            if (document.body.classList.contains("remp-selector")) {
-                                document.body.classList.remove("remp-selector");
-                            } else {
-                                document.body.classList.add("remp-selector");
-                            }
-                    }
+            for (let i=0, len=banners.length; i < len; i++) {
+                if (banners[i].id.length) {
+                    banners[i].classList.add('remp-picker-el');
+                    banners[i].onclick = this.bannerClick;
                 }
             }
         },
+
+        bannerClick: function() {
+            let banners = document.querySelectorAll(this.bannerSelector);
+
+            for (let i=0, len=banners.length; i < len; i++) {
+                if (banners[i].id.length) {
+                    banners[i].classList.remove("remp-active");
+                }
+            }
+
+            this.classList.add("remp-active");
+            remplib.bannerPicker.sendMessage({remp_action: 'el_select', el: '#' + this.id});
+        },
+
+        // send a message to another document instance - the page containing the iframe
+        sendMessage: function(msg, target) {
+            target = target || parent; // parent is the document within which the iframe is contained
+
+            target.postMessage(JSON.stringify(msg), remplib.campaign.url);
+        },
+
+        // message handler for requests from the page containing the iframe
+        receiver: function(e) {
+            if (e.origin === remplib.campaign.url) {
+                switch (e.data) {
+                    case 'remp-test': // compatibility check
+                        remplib.bannerPicker.sendMessage({remp_action: 'test_response'}, e.source);
+                        break;
+
+                    case 'remp-picker':
+                        document.body.classList.toggle("remp-picker");
+                }
+            }
+        }
     };
 
     prodlib.campaign._ = mocklib.campaign._ || [];

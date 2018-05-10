@@ -165,11 +165,11 @@
                                     <label for="target_selector" class="fg-label">Target element selector</label>
                                     <input v-model="targetSelector" class="form-control fg-input" name="target_selector" type="text" id="target_selector">
                                 </div>
-                                <span class="input-group-addon"><i class="zmdi zmdi-eyedropper" id="target_selection" v-on:click="selectTarget"></i></span>
+                                <span class="input-group-addon"><i class="zmdi zmdi-eyedropper" v-bind:class="{ disabled: pickerDisabled }" id="target_selection" v-on:click="selectTarget"></i></span>
                             </div>
                             <div class="input-group fg-float">
                                 <span class="input-group-addon"><i class="zmdi zmdi-link"></i></span>
-                                <div class="fg-line">
+                                <div class="fg-line" v-bind:class="{'has-error': selectorUrlError}">
                                     <label for="target_selector_url" class="fg-label">URL of target page for selection</label>
                                     <input v-model="targetSelectorUrl" class="form-control fg-input" name="target_selector_url" type="url" id="target_selector_url">
                                 </div>
@@ -201,12 +201,10 @@
                 </li>
                 <li v-if="previewFrameShow">
                     <div class="btn-group" id="frame-size-switcher">
-                        <button type="button" class="btn btn-info waves-effect" data-size="auto" v-on:click="frameSize" title="Auto">Auto</button>
-                        <button type="button" class="btn btn-default waves-effect" data-size="xs" v-on:click="frameSize" title="Extra Small">XS</button>
-                        <button type="button" class="btn btn-default waves-effect" data-size="sm" v-on:click="frameSize" title="Small">SM</button>
-                        <button type="button" class="btn btn-default waves-effect" data-size="md" v-on:click="frameSize" title="Medium">MD</button>
-                        <button type="button" class="btn btn-default waves-effect" data-size="lg" v-on:click="frameSize" title="Large">LG</button>
-                        <button type="button" class="btn btn-default waves-effect" data-size="xl" v-on:click="frameSize" title="Extra Large">XL</button>
+                        <button type="button" class="btn waves-effect" v-bind:class="['btn-' + (previewFrameSize === 'auto' ? 'info' : 'default')]" data-size="auto" v-on:click="changeFrameSize" title="Auto">Auto</button>
+                        <button type="button" class="btn waves-effect" v-bind:class="['btn-' + (previewFrameSize === 'xs' ? 'info' : 'default')]" data-size="xs" v-on:click="changeFrameSize" title="Mobile">Mobile</button>
+                        <button type="button" class="btn waves-effect" v-bind:class="['btn-' + (previewFrameSize === 'md' ? 'info' : 'default')]" data-size="md" v-on:click="changeFrameSize" title="Medium">Medium</button>
+                        <button type="button" class="btn waves-effect" v-bind:class="['btn-' + (previewFrameSize === 'xl' ? 'info' : 'default')]" data-size="xl" v-on:click="changeFrameSize" title="Extra Large">FullHD</button>
                     </div>
                 </li>
                 <li class="pull-right">
@@ -220,8 +218,9 @@
                         <div class="card-body" id="banner-preview">
                             <iframe id="preview_frame"
                                     v-bind:src="previewFrameUrl"
+                                    v-bind:style="previewFrameStyle"
                                     v-if="previewFrameShow"
-                                    v-on:load="frameLoad"
+                                    v-on:load="testCompatibility"
                             ></iframe>
                             <div class="p-relative">
                                 <banner-preview
@@ -275,9 +274,6 @@
         "_displayType",
         "_template",
 
-        "_previewFrameShow",
-        "_previewFrameUrl",
-
         "_mediumRectangleTemplate",
         "_barTemplate",
         "_htmlTemplate",
@@ -309,6 +305,12 @@
                 }
             });
         },
+        mounted: function(){
+            this.$nextTick(function() {
+                window.addEventListener('message', this.receiver, false);
+                window.addEventListener('resize', this.changeFrameSize);
+            })
+        },
         data: () => ({
             name: null,
             targetUrl: null,
@@ -321,9 +323,6 @@
             targetSelectorUrl: null,
             displayType: null,
             template: null,
-
-            previewFrameShow: false,
-            previewFrameUrl: null,
 
             mediumRectangleTemplate: null,
             barTemplate: null,
@@ -341,7 +340,24 @@
                 {"label": "Bounce", "value": "bounce"},
                 {"label": "Shake", "value": "shake"},
                 {"label": "Fade in down", "value": "fade-in-down"},
-            ]
+            ],
+
+            previewFrameShow: false,
+            previewFrameUrl: null,
+
+            selectorUrlError: false,
+            pickerDisabled: true,
+            previewFrameSize: 'auto',
+            previewFrameStyle: {},
+
+            compatTimer: 0,
+            compatDelay: 3000,
+            viewportDimensions: {
+                auto: 'auto',
+                xs: 575,
+                md: 991,
+                xl: 1440
+            }
         }),
         watch: {
             'targetSelectorUrl': function() {
@@ -351,33 +367,130 @@
                 if (urlVal.length && $url[0].checkValidity()) {
                     this.previewFrameUrl = urlVal + "#remp-picker";
                     this.previewFrameShow = true;
+                    this.selectorUrlError = false;
                     this.show = false;
-                    $url.parent().removeClass('has-error');
 
                 } else {
-                    if (!urlVal.length) {
-                        $('#target_selection').removeClass('disabled');
-                        $url.focus().parent().removeClass('has-error');
-                    } else {
-                        $url.focus().parent().addClass('has-error');
-                    }
+                    this.selectorUrlError = !!urlVal.length;
+                    this.pickerDisabled = !urlVal.length;
                     this.previewFrameShow = false;
                     this.previewFrameUrl = null;
+                    $url.focus();
                 }
             }
         },
         methods: {
-            selectTarget: (e) => {
-                if (!e.target.classList.contains("disabled")) {
-                    remplib.bannerForm.targetPicker.sendMessage("remp-picker");
+            selectTarget: function() {
+                if (!this.pickerDisabled) {
+                    this.sendMessage("remp-picker");
                 }
             },
-            frameLoad: () => {
-                remplib.bannerForm.targetPicker.testCompatibility();
+            testCompatibility: function() {
+                this.$nextTick(() => {
+                    if (this.sendMessage('remp-test')) {
+                        clearTimeout(this.compatTimer);
+
+                        this.compatTimer = setTimeout(function() {
+                            this.pickerDisabled = true;
+                            $.notify({
+                                message: "Page is not compatible for interactive element selection.\n" +
+                                "Please include the required .js file."
+                            }, {
+                                allow_dismiss: false,
+                                type: 'danger'
+                            });
+
+                        }, this.compatDelay);
+                    }
+                });
             },
-            frameSize: (e) => {
-                remplib.bannerForm.targetPicker.changeFrameSize(e);
+            changeFrameSize: function(e) {
+                let frame = $('#preview_frame');
+
+                if (!frame.is(':visible')) return;
+
+                if (e.type === 'click') {
+                    this.previewFrameSize = e.target.dataset.size;
+                }
+
+                let frameWidth = frame.width(),
+                    newWidth   = this.viewportDimensions[this.previewFrameSize],
+                    ratio      = parseFloat(frame[0].style.transform.replace(/[^0-9.]/g, '')) || 1,
+                    container  = {
+                        width: frame.parent().width(),
+                        height: frame.parent().height()
+                    },
+                    newRatio  = container.width / newWidth,
+                    newHeight = container.height / newRatio;
+
+                if (newRatio > 1) {
+                    this.previewFrameStyle = {
+                        top:    '0px',
+                        left:   ((container.width - newWidth) / 2) + 'px',
+                        width:  (newWidth) + 'px',
+                        height: (container.height) + 'px'
+                    };
+                } else if (newRatio === 1 || newWidth === 'auto') {
+                    this.previewFrameStyle = {};
+                } else if (newWidth !== frameWidth || newRatio !== ratio) {
+                    this.previewFrameStyle = {
+                        top:       ((container.height - newHeight) / 2) + 'px',
+                        left:      ((container.width - newWidth) / 2) + 'px',
+                        width:     newWidth + 'px',
+                        height:    newHeight + 'px',
+                        transform: 'scale(' + newRatio + ')'
+                    };
+                }
+            },
+            sendMessage: function(msg) {
+                let iframe = document.getElementById('preview_frame');
+
+                if (!$(iframe).is(':visible')) {
+                    $.notify({
+                        message: 'Please enter a valid URL of target page for selection'
+                    }, {
+                        allow_dismiss: false,
+                        type: 'danger'
+                    });
+
+                } else {
+                    iframe.contentWindow.postMessage(msg, '*');
+
+                    return true;
+                }
+
+                return false;
+            },
+            receiver: function(e) {
+                let message = this.parseResponse(e.data);
+
+                if (message && $('#preview_frame').length) {
+                    switch(message.remp_action){
+                        case 'test_response':
+                            this.pickerDisabled = false;
+                            clearTimeout(this.compatTimer);
+                            break;
+                        case 'el_select':
+                            $('#target_selector').val(message.el).focus().blur();
+                    }
+                }
+            },
+            parseResponse: function(jsonString) {
+                try {
+                    let o = JSON.parse(jsonString);
+
+                    if (o && typeof o === "object" && o.remp_action !== undefined) {
+                        return o;
+                    }
+                } catch (e) {}
+
+                return false;
             }
+        },
+
+        beforeDestroy: function() {
+            window.removeEventListener('message', this.receiver);
+            window.removeEventListener('resize', this.changeFrameSize);
         }
     }
 </script>

@@ -13,6 +13,7 @@ if (process.env.REMP_TARGET === 'lib') {
         })
         .js("resources/assets/js/banner.js", "js/banner.js")
         .js("resources/assets/js/remplib.js", "js/remplib.js")
+        .sass("resources/assets/sass/bannerPicker.scss", "css/bannerPicker.css")
 } else {
     mix
         .options({
