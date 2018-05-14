@@ -243,15 +243,16 @@ remplib = typeof(remplib) === 'undefined' ? {} : remplib;
             let banners = document.querySelectorAll(this.bannerSelector);
 
             for (let i=0, len=banners.length; i < len; i++) {
+                banners[i].classList.add('remp-picker-el');
+
                 if (banners[i].id.length) {
-                    banners[i].classList.add('remp-picker-el');
                     banners[i].onclick = this.bannerClick;
                 }
             }
         },
 
         bannerClick: function() {
-            let banners = document.querySelectorAll(this.bannerSelector);
+            let banners = document.getElementsByClassName('remp-picker-el');
 
             for (let i=0, len=banners.length; i < len; i++) {
                 if (banners[i].id.length) {

@@ -471,7 +471,10 @@
                             clearTimeout(this.compatTimer);
                             break;
                         case 'el_select':
-                            $('#target_selector').val(message.el).focus().blur();
+                            this.targetSelector = message.el;
+                            this.$nextTick(() => {
+                                $('#target_selector').focus().blur();
+                            });
                     }
                 }
             },
